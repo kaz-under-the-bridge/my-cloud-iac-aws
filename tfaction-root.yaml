@@ -1,4 +1,4 @@
-plan_workflow_name: AWS Terraform Plan
+plan_workflow_name: terraform-plan
 target_groups:
   - working_directory: terraform/envs/kaz-under-the-bridge
     target: terraform/envs/kaz-under-the-bridge
