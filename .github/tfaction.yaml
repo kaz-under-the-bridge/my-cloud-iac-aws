@@ -1,0 +1,10 @@
+# Tfactionグローバル設定
+plan_workflow_name: "terraform-plan"
+apply_workflow_name: "terraform-apply"
+
+working_directory_file: true
+
+# AWS認証設定（AWSを使用する場合）
+aws:
+  region: ap-northeast-1
+# 必要に応じて他の設定を追加
