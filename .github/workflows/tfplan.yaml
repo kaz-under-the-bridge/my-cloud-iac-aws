@@ -28,8 +28,8 @@ jobs:
         with:
           aqua_version: v2.27.4
 
-      # targetの取得
-      - uses: suzuki-shunsuke/tfaction/list-targets@v1.11.2
+      - name: Get changed working directory
+        uses: suzuki-shunsuke/tfaction/list-targets@d8646dcdc60933280ab9a229bd2a8d8c6390e1b6
         id: list-targets
 
   # plan で setup で取得した変更のある作業ディレクトリを並列に実行する
@@ -40,9 +40,6 @@ jobs:
 
     # setup で取得した変更のある作業ディレクトリが空の場合は実行しない
     if: join(fromJSON(needs.setup.outputs.targets), '') != ''
-
-    # GCP ProjectID, Numberはenvironment variableから取得
-    environment: ${{ matrix.target.target }}
 
     strategy:
       fail-fast: false

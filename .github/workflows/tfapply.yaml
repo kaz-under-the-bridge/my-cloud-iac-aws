@@ -39,9 +39,6 @@ jobs:
     # setup で取得した変更のある作業ディレクトリが空の場合は実行しない
     if: join(fromJSON(needs.setup.outputs.targets), '') != ''
 
-    # GCP ProjectID, Numberはenvironment variableから取得
-    environment: ${{ matrix.target.target }}
-
     strategy:
       fail-fast: false
       matrix:
