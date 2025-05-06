@@ -1,0 +1,33 @@
+name: Lint YAML
+on:
+  pull_request:
+    paths:
+      - "**.yml"
+      - "**.yaml"
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+
+      - name: Lint yaml files by yamllint
+        run: |
+          set -x
+          yamllint --strict --format github --config-file .yamllint.yml .
+
+      - name: Lint workflow files by actionlint
+        run: |
+          set -x
+          bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+          ./actionlint
