@@ -1,0 +1,77 @@
+name: terraform-apply
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "terraform/envs/**"
+      - "terraform/modules/**"
+      # - ".github/workflows/**"
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+  actions: read # artifact を取得するために必要
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      targets: ${{ steps.list-targets.outputs.targets }}
+    steps:
+      - uses: actions/checkout@v4.2.2
+
+      - uses: aquaproj/aqua-installer@v3.0.1
+        with:
+          aqua_version: v2.27.4
+
+      - uses: suzuki-shunsuke/tfaction/list-targets@v1.11.2
+        id: list-targets
+
+  # apply で setup で取得した変更のある作業ディレクトリを並列に実行する
+  apply:
+    name: "terraform apply (${{ matrix.target.target }})"
+    runs-on: ${{ matrix.target.runs_on }}
+    needs: setup
+
+    # setup で取得した変更のある作業ディレクトリが空の場合は実行しない
+    if: join(fromJSON(needs.setup.outputs.targets), '') != ''
+
+    # GCP ProjectID, Numberはenvironment variableから取得
+    environment: ${{ matrix.target.target }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        target: ${{ fromJSON(needs.setup.outputs.targets) }}
+
+    env:
+      TFACTION_IS_APPLY: "true" # apply する場合は TFACTION_IS_APPLY を "true" に指定
+      TFACTION_TARGET: ${{ matrix.target.target }}
+      TFACTION_WORKING_DIR: ${{ matrix.target.working_directory }}
+      TFACTION_JOB_TYPE: ${{ matrix.target.job_type }}
+
+    steps:
+      - uses: actions/checkout@v4.2.2
+
+      - uses: aquaproj/aqua-installer@v3.0.1
+        with:
+          aqua_version: v2.27.4
+
+      - id: github_app_token # ref: https://zenn.dev/momosuke/articles/test-create-github-app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.TERRAFORM_APP_ID }}
+          private-key: ${{ secrets.TERRAFORM_APP_PRIVATE_KEY }}
+
+      # terraform init などの準備を行う Action
+      - uses: suzuki-shunsuke/tfaction/setup@v1.11.2
+        with:
+          github_token: ${{ steps.github_app_token.outputs.token }}
+
+      # terraform apply を実行する Action
+      - uses: suzuki-shunsuke/tfaction/apply@v1.11.2
+        with:
+          github_token: ${{ steps.github_app_token.outputs.token }}
