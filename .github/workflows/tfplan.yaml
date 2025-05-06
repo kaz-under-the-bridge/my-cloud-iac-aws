@@ -1,0 +1,79 @@
+name: terraform-plan
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "terraform/envs/**"
+      - "terraform/modules/**"
+      # - ".github/workflows/**"
+
+permissions:
+  id-token: write
+  contents: write
+  pull-requests: write
+
+jobs:
+  # 変更のあった作業ディレクトリを取得
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      targets: ${{ steps.list-targets.outputs.targets }}
+    steps:
+      - uses: actions/checkout@v4.2.2
+
+      # aqua(tfactionで使用)
+      - uses: aquaproj/aqua-installer@v3.0.1
+        with:
+          aqua_version: v2.27.4
+
+      # targetの取得
+      - uses: suzuki-shunsuke/tfaction/list-targets@v1.11.2
+        id: list-targets
+
+  # plan で setup で取得した変更のある作業ディレクトリを並列に実行する
+  plan:
+    name: "terraform plan (${{ matrix.target.target }})"
+    runs-on: ${{ matrix.target.runs_on }}
+    needs: setup
+
+    # setup で取得した変更のある作業ディレクトリが空の場合は実行しない
+    if: join(fromJSON(needs.setup.outputs.targets), '') != ''
+
+    # GCP ProjectID, Numberはenvironment variableから取得
+    environment: ${{ matrix.target.target }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        target: ${{ fromJSON(needs.setup.outputs.targets) }}
+
+    concurrency: ${{matrix.target.target}}
+
+    env:
+      TFACTION_TARGET: ${{ matrix.target.target }}
+      TFACTION_JOB_TYPE: terraform
+
+    steps:
+      - uses: actions/checkout@v4.2.2
+
+      - uses: aquaproj/aqua-installer@v3.0.1
+        with:
+          aqua_version: v2.27.4
+
+      - id: github_app_token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.TERRAFORM_APP_ID }}
+          private-key: ${{ secrets.TERRAFORM_APP_PRIVATE_KEY }}
+
+      # terraform init などの準備を行う Action
+      - uses: suzuki-shunsuke/tfaction/setup@v1.11.2
+        with:
+          github_token: ${{ steps.github_app_token.outputs.token }}
+
+      # terraform plan を実行する Action
+      - uses: suzuki-shunsuke/tfaction/plan@v1.11.2
+        with:
+          github_token: ${{ steps.github_app_token.outputs.token }}
