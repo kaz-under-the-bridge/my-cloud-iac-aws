@@ -1,0 +1,35 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+terraform_rules:
+  - when: creating a resource
+    then: use snake_case for resource names  # リソース名は snake_case を使う
+
+  - when: writing terraform for GCP
+    then: include `project`, `region`, and `labels` whenever possible  # GCPでは project, region, labels を可能な限り記述する
+
+  - when: writing a Google provider block
+    then: specify the provider version  # provider のバージョン制約を明示すること（例: "~> 5.0"）
+
+  - when: defining variables
+    then: define type, description, and default if applicable  # type, description, default を明示する
+
+  - when: writing outputs
+    then: include a meaningful description  # 出力変数にはわかりやすい description をつける
+
+  - when: defining IAM bindings or policies
+    then: include a comment explaining the purpose  # IAM権限を設定するときは、目的をコメントで明示する
+
+  - when: defining modules
+    then: organize variables, outputs, and logic clearly with comments  # モジュールは variables / outputs / 処理をコメント付きで整理する
+
+  - when: resource arguments have default values
+    then: omit them unless explicitly needed  # 明示する必要がない限り、デフォルト値の指定は省略する
+
+  - when: writing sensitive variables
+    then: mark them as `sensitive = true` and avoid outputting them  # 機密変数は sensitive = true にして、output に含めない
+
+  - when: writing backend configuration
+    then: use remote state (e.g., GCS) with proper locking  # GCSなどを使ったリモートステート＋ロック機能を使う
